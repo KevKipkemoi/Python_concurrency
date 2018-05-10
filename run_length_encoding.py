@@ -5,6 +5,7 @@ of bits repeated.
 For example, the string 000011000 might be replaced with
 04 12 03, then break each row into 127 bit chunks.
 '''
+from PIL import Image
 from bitarray import bitarray
 
 def compress_chunk(chunk):
@@ -42,3 +43,20 @@ def compress_in_executor(executor, bits, width):
     compressed = bytearray()
     for compressor in row_compressors:
         compressed.extend(compressor.result())
+
+'''Function loads image using the pillow module, converts
+it into bits, and compresses it
+'''
+def compress_image(in_filename, out_filename, executor=None):
+    executor = executor if executor else ProcessPoolExecutor()
+    with Image.open(in_filename) as image:
+        bits = bitarray(image.convert('1').getdata())
+        width, height = image.size
+
+    compressed = compress_in_executor(executor, bits, width)
+
+    with open(out_filename, 'wb') as file:
+        in_filename, out_filename = sys.argv[1:3]
+        #executor = ThreadPoolExecutor(4)
+        executor = ProcessPoolExecutor()
+        compress_image(in_filename, out_filename, executor)
