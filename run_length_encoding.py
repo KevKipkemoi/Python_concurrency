@@ -6,6 +6,7 @@ For example, the string 000011000 might be replaced with
 04 12 03, then break each row into 127 bit chunks.
 '''
 from PIL import Image
+from pathlib import Path
 from bitarray import bitarray
 
 def compress_chunk(chunk):
@@ -60,3 +61,24 @@ def compress_image(in_filename, out_filename, executor=None):
         #executor = ThreadPoolExecutor(4)
         executor = ProcessPoolExecutor()
         compress_image(in_filename, out_filename, executor)
+'''Compresses all the bitmaps in a directory in parallel
+The only thing we need to pass in to the subprocess are the
+filenames.
+Existing code is compressing individual images. Meaning a
+ProcessPoolExecutor is running in each subprocess
+!! DO NOT DO IRL
+'''
+def compress_dir(in_dir, out_dir):
+    if not out_dir.exists():
+        out_dir.mkdir()
+
+    executor = ProcessPoolExecutor()
+    for file in (
+            f for f in in_dir.iterdir() if f.suffix == '.bmp'):
+        out_file = (out_dir / file.name).with_suffix('.rle')
+        executor.submit(
+            compress_image, str(file), str(out_file))
+
+def dir_images_main():
+    in_dir, out_dir = (Path(p) for p in sys.argv[1:3])
+    compress_dir(in_dir, out_dir)
